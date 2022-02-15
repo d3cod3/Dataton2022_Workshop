@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<!-- HEAD
+–––––––––––––––––––––––––––––––––––––––––––––––––– -->
+<head>
+  <meta charset='utf-8'>
+
+  <title></title>
+
+  <!-- SEO -->
+  <meta content="" name="author" />
+  <meta content="" name="description" />
+  <meta content="" name="keywords" />
+
+  <meta name="robots" content="index, follow"/>
+
+  <!-- Mobile Specific Metas ( Responsive )
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <meta name="viewport" content="width=device-width,height=device-height,initial-scale=1.0" id="viewport">
+
+  <meta http-equiv="cleartype" content="on">
+  <meta name=format-detection content="telephone=no">
+
+  <!-- android -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <!-- iOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="translucent-white">
+  <meta name="apple-mobile-web-app-title" content="">
+
+  <!-- Social Sharing Meta Tags
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+
+  <!-- OpenGraph
+       https://ogp.me/
+  -->
+  <meta property=og:locale content="en_EN" />
+  <meta property=og:title content="">
+  <meta property=og:description content="">
+  <meta property=og:image content="">
+  <meta property=og:site_name content="">
+  <meta property=og:url content="">
+  <meta property=og:type content=website>
+
+  <!-- Twitter Cards
+       https://developer.twitter.com/en/docs/twitter-for-websites/cards/overview/summary-card-with-large-image
+  -->
+  <meta name=twitter:card content=summary_large_image>
+  <meta name=twitter:site content="">
+  <meta name=twitter:creator content="">
+  <meta name=twitter:title content="">
+  <meta name=twitter:description content="">
+  <meta name=twitter:image content="">
+
+  <!-- Favicon
+       https://www.favicon-generator.org/
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+
+
+  <!-- CSS (Cascading Style Sheets)
+       https://en.wikipedia.org/wiki/CSS
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link rel="stylesheet" type="text/css" href="css/reset.css">
+  <link rel="stylesheet" type="text/css" href="css/normalize.css">
+  <link rel="stylesheet" type="text/css" href="css/skeleton.css">
+
+
+</head>
+
+<!-- BODY ( DOM [Document Object Model] created when page is loaded )
+     https://en.wikipedia.org/wiki/Document_Object_Model
+–––––––––––––––––––––––––––––––––––––––––––––––––– -->
+<body>
+
+  <div id="d3_data_visualization" style="width:100%;height:100%;"></div>
+
+</body>
+
+
+<!-- JS (Javascript, client side scripts)
+–––––––––––––––––––––––––––––––––––––––––––––––––– -->
+<script src="js/d3.v4.min.js"></script> <!-- https://d3js.org/ -->
+
+<script>
+
+  /*
+    Using: The Window Object | https://www.w3schools.com/jsref/obj_window.asp
+  */
+
+  // Capture main div
+  var body = d3.select("#d3_data_visualization");
+
+  // append an svg ( scalable vector graphics )
+  var svg = body.append("svg:svg")
+                .attr("width","100%")
+                .attr("height","100%")
+                .style("background-color","#121212");
+
+  // draw a circle
+  var circle = svg.append("circle")
+               .attr("cx",window.innerWidth/2)
+               .attr("cy",window.innerHeight/2)
+               .attr("r",window.innerHeight/2 - 100)
+               .style("fill","orange");
+
+</script>
+
+</html>

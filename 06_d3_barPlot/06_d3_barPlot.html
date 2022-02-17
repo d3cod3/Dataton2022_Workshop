@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<!-- HEAD
+–––––––––––––––––––––––––––––––––––––––––––––––––– -->
+<head>
+  <meta charset='utf-8'>
+
+  <title></title>
+
+  <!-- SEO -->
+  <meta content="" name="author" />
+  <meta content="" name="description" />
+  <meta content="" name="keywords" />
+
+  <meta name="robots" content="index, follow"/>
+
+  <!-- Mobile Specific Metas ( Responsive )
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <meta name="viewport" content="width=device-width,height=device-height,initial-scale=1.0" id="viewport">
+
+  <meta http-equiv="cleartype" content="on">
+  <meta name=format-detection content="telephone=no">
+
+  <!-- android -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <!-- iOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="translucent-white">
+  <meta name="apple-mobile-web-app-title" content="">
+
+  <!-- Social Sharing Meta Tags
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+
+  <!-- OpenGraph
+       https://ogp.me/
+  -->
+  <meta property=og:locale content="en_EN" />
+  <meta property=og:title content="">
+  <meta property=og:description content="">
+  <meta property=og:image content="">
+  <meta property=og:site_name content="">
+  <meta property=og:url content="">
+  <meta property=og:type content=website>
+
+  <!-- Twitter Cards
+       https://developer.twitter.com/en/docs/twitter-for-websites/cards/overview/summary-card-with-large-image
+  -->
+  <meta name=twitter:card content=summary_large_image>
+  <meta name=twitter:site content="">
+  <meta name=twitter:creator content="">
+  <meta name=twitter:title content="">
+  <meta name=twitter:description content="">
+  <meta name=twitter:image content="">
+
+  <!-- Favicon
+       https://www.favicon-generator.org/
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+
+
+  <!-- CSS (Cascading Style Sheets)
+       https://en.wikipedia.org/wiki/CSS
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link rel="stylesheet" type="text/css" href="css/reset.css">
+  <link rel="stylesheet" type="text/css" href="css/normalize.css">
+  <link rel="stylesheet" type="text/css" href="css/skeleton.css">
+
+  <style>
+
+    svg {
+      background-color: #121212;
+    }
+
+  </style>
+
+
+</head>
+
+<!-- BODY ( DOM [Document Object Model] created when page is loaded )
+     https://en.wikipedia.org/wiki/Document_Object_Model
+–––––––––––––––––––––––––––––––––––––––––––––––––– -->
+<body>
+
+  <div id="d3_barPlot" style="width:100%;height:100%;"></div>
+
+</body>
+
+
+<!-- JS (Javascript, client side scripts)
+–––––––––––––––––––––––––––––––––––––––––––––––––– -->
+<script src="js/d3.v4.min.js"></script>     <!-- https://d3js.org/ -->
+<script src="js/jquery-3.6.0.min.js"></script>  <!-- https://jquery.com/ -->
+
+<script>
+
+  /*
+    Using:
+            The Window Object | https://www.w3schools.com/jsref/obj_window.asp
+            HTML DOM Document | https://www.w3schools.com/js/js_htmldom_document.asp
+            EVENTS            | https://www.w3schools.com/jsref/dom_obj_event.asp
+            FUNCTIONS         | https://www.w3schools.com/js/js_functions.asp
+            setInterval       | https://www.w3schools.com/jsref/met_win_setinterval.asp
+            Math              | https://www.w3schools.com/js/js_math.asp
+            JQUERY Library    | https://jquery.com/
+  */
+
+
+  ////////////////////////////////////////////////// INIT WHEN PAGE LOADED
+  $(document).ready(function() {
+
+  });
+
+  ////////////////////////////////////////////////// INIT VARS
+
+  var width = window.innerWidth;
+  var height = window.innerHeight;
+
+  var margin = {top: 30, right: 30, bottom: 70, left: 60};
+
+  var plotWidth = width - margin.left - margin.right;
+  var plotHeight = height - margin.top - margin.bottom;
+
+  var jsonDataURL = "data/randomData.json";
+
+  ////////////////////////////////////////////////// SETUP
+
+  // Capture chart div
+  var chart = d3.select("#d3_barPlot");
+
+  // append an svg ( scalable vector graphics ) with style attributes
+  var svg = chart.append("svg:svg")
+            .attr("width", plotWidth + margin.left + margin.right)
+            .attr("height", plotHeight + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform","translate(" + margin.left + "," + margin.top + ")");
+
+  BarPlot(jsonDataURL);
+
+  ////////////////////////////////////////////////// UPDATE
+
+
+  // METHOD with setInterval
+  setInterval(updateVisualization,20);
+
+
+  ////////////////////////////////////////////////// FUNCTIONS
+  function updateVisualization(){
+
+  }
+
+  function BarPlot(dataURL){
+    d3.json(dataURL, function(data) {
+
+      // X axis
+      var x = d3.scaleBand()
+      .range([ 0, plotWidth ])
+      .domain(data.map(function(d) { return d.Country; }))
+      .padding(0.2);
+      svg.append("g")
+      .attr("transform", "translate(0," + plotHeight + ")")
+      .call(d3.axisBottom(x))
+      .selectAll("text")
+      .attr("transform", "translate(-10,0)rotate(-45)")
+      .style("text-anchor", "end");
+
+      // Add Y axis
+      var y = d3.scaleLinear()
+      .domain([0, 13000])
+      .range([ plotHeight, 0]);
+      svg.append("g")
+      .call(d3.axisLeft(y));
+
+      // Bars
+      svg.selectAll("mybar")
+      .data(data)
+      .enter()
+      .append("rect")
+      .attr("x", function(d) { return x(d.Country); })
+      .attr("y", function(d) { return y(d.Value); })
+      .attr("width", x.bandwidth())
+      .attr("height", function(d) { return plotHeight - y(d.Value); })
+      .attr("fill", "#69b3a2")
+
+    })
+  }
+
+</script>
+
+</html>

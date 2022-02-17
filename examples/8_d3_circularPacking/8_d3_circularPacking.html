@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<!-- HEAD
+–––––––––––––––––––––––––––––––––––––––––––––––––– -->
+<head>
+  <meta charset='utf-8'>
+
+  <title></title>
+
+  <!-- SEO -->
+  <meta content="" name="author" />
+  <meta content="" name="description" />
+  <meta content="" name="keywords" />
+
+  <meta name="robots" content="index, follow"/>
+
+  <!-- Mobile Specific Metas ( Responsive )
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <meta name="viewport" content="width=device-width,height=device-height,initial-scale=1.0" id="viewport">
+
+  <meta http-equiv="cleartype" content="on">
+  <meta name=format-detection content="telephone=no">
+
+  <!-- android -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <!-- iOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="translucent-white">
+  <meta name="apple-mobile-web-app-title" content="">
+
+  <!-- Social Sharing Meta Tags
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+
+  <!-- OpenGraph
+       https://ogp.me/
+  -->
+  <meta property=og:locale content="en_EN" />
+  <meta property=og:title content="">
+  <meta property=og:description content="">
+  <meta property=og:image content="">
+  <meta property=og:site_name content="">
+  <meta property=og:url content="">
+  <meta property=og:type content=website>
+
+  <!-- Twitter Cards
+       https://developer.twitter.com/en/docs/twitter-for-websites/cards/overview/summary-card-with-large-image
+  -->
+  <meta name=twitter:card content=summary_large_image>
+  <meta name=twitter:site content="">
+  <meta name=twitter:creator content="">
+  <meta name=twitter:title content="">
+  <meta name=twitter:description content="">
+  <meta name=twitter:image content="">
+
+  <!-- Favicon
+       https://www.favicon-generator.org/
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+
+
+  <!-- CSS (Cascading Style Sheets)
+       https://en.wikipedia.org/wiki/CSS
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link rel="stylesheet" type="text/css" href="../../css/reset.css">
+  <link rel="stylesheet" type="text/css" href="../../css/normalize.css">
+  <link rel="stylesheet" type="text/css" href="../../css/skeleton.css">
+
+  <style>
+
+    /* SVG container style */
+    svg {
+      background-color: #121212;
+    }
+
+    /* Draggable nodes style */
+    .node:hover{
+      stroke-width: 7px !important;
+      opacity: 1 !important;
+    }
+
+  </style>
+
+
+</head>
+
+<!-- BODY ( DOM [Document Object Model] created when page is loaded )
+     https://en.wikipedia.org/wiki/Document_Object_Model
+–––––––––––––––––––––––––––––––––––––––––––––––––– -->
+<body>
+
+  <div id="d3_circularPacking" style="width:100%;height:100%;"></div>
+
+</body>
+
+
+<!-- JS (Javascript, client side scripts)
+–––––––––––––––––––––––––––––––––––––––––––––––––– -->
+<script src="../../js/d3.v4.min.js"></script>     <!-- https://d3js.org/ -->
+<script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script> <!-- D3 Color Palette -->
+
+<script>
+
+  /*
+    Using:
+            The Window Object | https://www.w3schools.com/jsref/obj_window.asp
+            HTML DOM Document | https://www.w3schools.com/js/js_htmldom_document.asp
+            FUNCTIONS         | https://www.w3schools.com/js/js_functions.asp
+            setInterval       | https://www.w3schools.com/jsref/met_win_setinterval.asp
+            Math              | https://www.w3schools.com/js/js_math.asp
+  */
+
+  ////////////////////////////////////////////////// INIT VARS
+
+  var margin = {top: 10, right: 10, bottom: 10, left: 10};
+
+  var plotWidth = window.innerWidth - margin.left - margin.right;
+  var plotHeight = window.innerHeight - margin.top - margin.bottom;
+
+  var localData;
+  var dataLoaded = false;
+
+  var jsonDataURL     = "../../data/randomData.json";
+  var minPlotValue    = 0;
+  var maxPlotValue    = 13000;
+  var minCircleRadius = 30;
+  var maxCircleRadius = 156;
+
+  var colors;
+  var node;
+  var simulation;
+
+  var svgContainerID = "svgContainer";
+  var tooltip;
+
+  ////////////////////////////////////////////////// SETUP
+
+  // Capture chart div
+  var chart = d3.select("#d3_circularPacking");
+
+  // append an svg ( scalable vector graphics ) with style attributes
+  var svg = chart.append("svg:svg")
+            .attr("id",svgContainerID)
+            .attr("width", plotWidth + margin.left + margin.right)
+            .attr("height", plotHeight + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform","translate(" + margin.left + "," + margin.top + ")");
+
+  // create data scale for circle radius
+  var radius = d3.scaleLinear()
+              .domain([minPlotValue, maxPlotValue])
+              .range([minCircleRadius,maxCircleRadius]);
+
+  // plot chart
+  CircularPacking(jsonDataURL);
+  CreateTooltip();
+
+  dataLoaded = true;
+
+  ////////////////////////////////////////////////// UPDATE
+
+  // METHOD with setInterval
+  setInterval(updateVisualization,20);
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////// FUNCTIONS
+  function updateVisualization(){
+
+    if(dataLoaded){
+      SVG_update();
+      CircularPacking_update();
+    }
+
+  }
+
+  // Update SVG container
+  function SVG_update(){
+    plotWidth = window.innerWidth - margin.left - margin.right;
+    plotHeight = window.innerHeight - margin.top - margin.bottom;
+
+    d3.select("#"+svgContainerID).attr("width", plotWidth + margin.left + margin.right)
+                              .attr("height", plotHeight + margin.top + margin.bottom);
+  }
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////
+  /* Circular Packing CHART */
+  ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  // create chart
+  function CircularPacking(dataURL){
+    d3.json(dataURL, function(data) {
+      // store data in local var
+      localData = data;
+
+      //console.log(localData);
+
+      colors = d3.scaleOrdinal()
+                .domain(data)
+                .range(d3.schemeSet3);
+
+      node = svg.append("g")
+                .selectAll("circle")
+                .data(data)
+                .enter()
+                .append("circle")
+                .attr("class", "node")
+                .attr("r", function(d){ return radius(d.Value)})
+                .attr("cx", plotWidth / 2)
+                .attr("cy", plotHeight / 2)
+                .style("fill", function(d){ return colors(d.Country)})
+                .style("fill-opacity", 0.7)
+                .attr("stroke", "#626262")
+                .style("stroke-width", 1)
+                .on("mouseover", tooltip_mouseover) // What to do when hovered
+                .on("mousemove", tooltip_mousemove)
+                .on("mouseleave", tooltip_mouseleave)
+                .call(d3.drag() // call specific function when circle is dragged
+                     .on("start", dragstarted)
+                     .on("drag", dragged)
+                     .on("end", dragended));
+
+      // Features of the forces applied to the nodes
+      simulation = d3.forceSimulation()
+                     .force("center", d3.forceCenter().x(plotWidth / 2).y(plotHeight / 2)) // Attraction to the center of the svg area
+                     .force("charge", d3.forceManyBody().strength(30)) // Nodes are attracted one each other of value is > 0
+                     .force("collide", d3.forceCollide().strength(.2).radius(function(d){ return (radius(d.Value)+3) }).iterations(1)) // Force that avoids circle overlapping
+
+      // Apply these forces to the nodes and update their positions.
+      // Once the force algorithm is happy with positions ('alpha' value is low enough), simulations will stop.
+      simulation.nodes(data)
+                .on("tick", function(d){
+                    node.attr("cx", function(d){ return d.x; })
+                        .attr("cy", function(d){ return d.y; })
+                });
+
+    });
+  }
+
+  function CircularPacking_update(){
+    simulation.force("center", d3.forceCenter().x(plotWidth / 2).y(plotHeight / 2));
+  }
+
+  function dragstarted(d) {
+    if (!d3.event.active) simulation.alphaTarget(.3).restart();
+    d.fx = d.x;
+    d.fy = d.y;
+  }
+  function dragged(d) {
+    d.fx = d3.event.x;
+    d.fy = d3.event.y;
+  }
+  function dragended(d) {
+    if (!d3.event.active) simulation.alphaTarget(.8);
+    d.fx = null;
+    d.fy = null;
+  }
+
+  // Create tooltip
+  function CreateTooltip(){
+    tooltip = chart.append("div")
+                   .style("opacity", 0)
+                   .attr("class", "tooltip")
+                   .style("background-color", "white")
+                   .style("border", "solid")
+                   .style("border-width", "2px")
+                   .style("border-radius", "5px")
+                   .style("padding", "5px");
+  }
+
+  var tooltip_mouseover = function(d) {
+    tooltip.style("opacity", 1)
+  }
+
+  var tooltip_mousemove = function(d) {
+    tooltip.html('<u>' + d.Country + '</u>' + "<br>" + d.Value)
+           .style("position","fixed")
+           .style("left", (d3.mouse(this)[0]+20) + "px")
+           .style("top", (d3.mouse(this)[1]) + "px");
+  }
+
+  var tooltip_mouseleave = function(d) {
+    tooltip.style("opacity", 0)
+           .style("left","-1000px");
+  }
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+</script>
+
+</html>

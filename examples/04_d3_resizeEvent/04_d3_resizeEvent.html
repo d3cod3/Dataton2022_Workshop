@@ -62,9 +62,9 @@
   <!-- CSS (Cascading Style Sheets)
        https://en.wikipedia.org/wiki/CSS
   –––––––––––––––––––––––––––––––––––––––––––––––––– -->
-  <link rel="stylesheet" type="text/css" href="css/reset.css">
-  <link rel="stylesheet" type="text/css" href="css/normalize.css">
-  <link rel="stylesheet" type="text/css" href="css/skeleton.css">
+  <link rel="stylesheet" type="text/css" href="../css/../reset.css">
+  <link rel="stylesheet" type="text/css" href="../css/../normalize.css">
+  <link rel="stylesheet" type="text/css" href="../css/../skeleton.css">
 
 
 </head>
@@ -81,33 +81,16 @@
 
 <!-- JS (Javascript, client side scripts)
 –––––––––––––––––––––––––––––––––––––––––––––––––– -->
-<script src="js/d3.v4.min.js"></script>     <!-- https://d3js.org/ -->
-<script src="js/jquery-3.6.0.min.js"></script>  <!-- https://jquery.com/ -->
+<script src="../../js/d3.v4.min.js"></script> <!-- https://d3js.org/ -->
 
 <script>
 
   /*
-    Using:
-            The Window Object | https://www.w3schools.com/jsref/obj_window.asp
-            HTML DOM Document | https://www.w3schools.com/js/js_htmldom_document.asp
-            EVENTS            | https://www.w3schools.com/jsref/dom_obj_event.asp
-            FUNCTIONS         | https://www.w3schools.com/js/js_functions.asp
-            setInterval       | https://www.w3schools.com/jsref/met_win_setinterval.asp
-            Math              | https://www.w3schools.com/js/js_math.asp
-            JQUERY Library    | https://jquery.com/
+      Using:
+              The Window Object | https://www.w3schools.com/jsref/obj_window.asp
+              EVENTS            | https://www.w3schools.com/jsref/dom_obj_event.asp
+              FUNCTIONS         | https://www.w3schools.com/js/js_functions.asp
   */
-
-
-  ////////////////////////////////////////////////// INIT WHEN PAGE LOADED
-  $(document).ready(function() {
-    updateLoop();
-  });
-
-  ////////////////////////////////////////////////// SETUP
-
-  var mouseX = 0, mouseY = 0;
-
-  var radius = window.innerHeight/2 - 100;
 
   // Capture main div
   var body = d3.select("#d3_data_visualization");
@@ -126,40 +109,18 @@
                .style("fill","orange");
 
 
-  ////////////////////////////////////////////////// UPDATE
-
-  /*
-    // METHOD with setInterval
-    setInterval(updateVisualization,20);
-  */
-
-  // METHOD with requestAnimationFrame ( repainting the screen )
-  var updateLoop = function(){
-
+  // EVENTS
+  window.addEventListener('resize', function() {
     updateVisualization();
+  }, true);
 
-    // calling loop function with requestAnimationFrame
-    requestAnimationFrame(updateLoop);
 
-  };
-
-  ////////////////////////////////////////////////// FUNCTIONS
+  // FUNCTIONS
   function updateVisualization(){
-    radius = window.innerHeight/2 - 100;
     circle.attr("cx",window.innerWidth/2)
           .attr("cy",window.innerHeight/2)
-          .attr("r",radius*(Math.abs(map(mouseX,0,window.innerWidth,-0.5,0.5)) + Math.abs(map(mouseY,0,window.innerHeight,-0.5,0.5))));
+          .attr("r",window.innerHeight/2 - 100);
   }
-
-  function map(number, inMin, inMax, outMin, outMax){
-    return (number - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
-}
-
-  ////////////////////////////////////////////////// MOUSE EVENTS
-  document.addEventListener('mousemove', (event) => {
-    mouseX = event.clientX;
-    mouseY = event.clientY;
-  });
 
 </script>
 

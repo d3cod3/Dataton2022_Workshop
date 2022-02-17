@@ -62,17 +62,9 @@
   <!-- CSS (Cascading Style Sheets)
        https://en.wikipedia.org/wiki/CSS
   –––––––––––––––––––––––––––––––––––––––––––––––––– -->
-  <link rel="stylesheet" type="text/css" href="css/reset.css">
-  <link rel="stylesheet" type="text/css" href="css/normalize.css">
-  <link rel="stylesheet" type="text/css" href="css/skeleton.css">
-
-  <style>
-
-    svg {
-      background-color: #121212;
-    }
-
-  </style>
+  <link rel="stylesheet" type="text/css" href="../../css/reset.css">
+  <link rel="stylesheet" type="text/css" href="../../css/normalize.css">
+  <link rel="stylesheet" type="text/css" href="../../css/skeleton.css">
 
 
 </head>
@@ -82,15 +74,15 @@
 –––––––––––––––––––––––––––––––––––––––––––––––––– -->
 <body>
 
-  <div id="d3_barPlot" style="width:100%;height:100%;"></div>
+  <div id="d3_data_visualization" style="width:100%;height:100%;"></div>
 
 </body>
 
 
 <!-- JS (Javascript, client side scripts)
 –––––––––––––––––––––––––––––––––––––––––––––––––– -->
-<script src="js/d3.v4.min.js"></script>     <!-- https://d3js.org/ -->
-<script src="js/jquery-3.6.0.min.js"></script>  <!-- https://jquery.com/ -->
+<script src="../../js/d3.v4.min.js"></script>     <!-- https://d3js.org/ -->
+<script src="../../js/jquery-3.6.0.min.js"></script>  <!-- https://jquery.com/ -->
 
 <script>
 
@@ -108,82 +100,66 @@
 
   ////////////////////////////////////////////////// INIT WHEN PAGE LOADED
   $(document).ready(function() {
-
+    updateLoop();
   });
-
-  ////////////////////////////////////////////////// INIT VARS
-
-  var width = window.innerWidth;
-  var height = window.innerHeight;
-
-  var margin = {top: 30, right: 30, bottom: 70, left: 60};
-
-  var plotWidth = width - margin.left - margin.right;
-  var plotHeight = height - margin.top - margin.bottom;
-
-  var jsonDataURL = "https://dataton.d3cod3.org/data/randomData.json";
 
   ////////////////////////////////////////////////// SETUP
 
-  // Capture chart div
-  var chart = d3.select("#d3_barPlot");
+  var mouseX = 0, mouseY = 0;
 
-  // append an svg ( scalable vector graphics ) with style attributes
-  var svg = chart.append("svg:svg")
-            .attr("width", plotWidth + margin.left + margin.right)
-            .attr("height", plotHeight + margin.top + margin.bottom)
-            .append("g")
-            .attr("transform","translate(" + margin.left + "," + margin.top + ")");
+  var radius = window.innerHeight/2 - 100;
 
-  BarPlot(jsonDataURL);
+  // Capture main div
+  var body = d3.select("#d3_data_visualization");
+
+  // append an svg ( scalable vector graphics )
+  var svg = body.append("svg:svg")
+                .attr("width","100%")
+                .attr("height","100%")
+                .style("background-color","#121212");
+
+  // draw a circle
+  var circle = svg.append("circle")
+               .attr("cx",window.innerWidth/2)
+               .attr("cy",window.innerHeight/2)
+               .attr("r",window.innerHeight/2 - 100)
+               .style("fill","orange");
+
 
   ////////////////////////////////////////////////// UPDATE
 
+  /*
+    // METHOD with setInterval
+    setInterval(updateVisualization,20);
+  */
 
-  // METHOD with setInterval
-  setInterval(updateVisualization,20);
+  // METHOD with requestAnimationFrame ( repainting the screen )
+  var updateLoop = function(){
 
+    updateVisualization();
+
+    // calling loop function with requestAnimationFrame
+    requestAnimationFrame(updateLoop);
+
+  };
 
   ////////////////////////////////////////////////// FUNCTIONS
   function updateVisualization(){
-
+    radius = window.innerHeight/2 - 100;
+    circle.attr("cx",window.innerWidth/2)
+          .attr("cy",window.innerHeight/2)
+          .attr("r",radius*(Math.abs(map(mouseX,0,window.innerWidth,-0.5,0.5)) + Math.abs(map(mouseY,0,window.innerHeight,-0.5,0.5))));
   }
 
-  function BarPlot(dataURL){
-    d3.json(dataURL, function(data) {
+  function map(number, inMin, inMax, outMin, outMax){
+    return (number - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
+}
 
-      // X axis
-      var x = d3.scaleBand()
-      .range([ 0, plotWidth ])
-      .domain(data.map(function(d) { return d.Country; }))
-      .padding(0.2);
-      svg.append("g")
-      .attr("transform", "translate(0," + plotHeight + ")")
-      .call(d3.axisBottom(x))
-      .selectAll("text")
-      .attr("transform", "translate(-10,0)rotate(-45)")
-      .style("text-anchor", "end");
-
-      // Add Y axis
-      var y = d3.scaleLinear()
-      .domain([0, 13000])
-      .range([ plotHeight, 0]);
-      svg.append("g")
-      .call(d3.axisLeft(y));
-
-      // Bars
-      svg.selectAll("mybar")
-      .data(data)
-      .enter()
-      .append("rect")
-      .attr("x", function(d) { return x(d.Country); })
-      .attr("y", function(d) { return y(d.Value); })
-      .attr("width", x.bandwidth())
-      .attr("height", function(d) { return plotHeight - y(d.Value); })
-      .attr("fill", "#69b3a2")
-
-    })
-  }
+  ////////////////////////////////////////////////// MOUSE EVENTS
+  document.addEventListener('mousemove', (event) => {
+    mouseX = event.clientX;
+    mouseY = event.clientY;
+  });
 
 </script>
 

@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<!-- HEAD
+–––––––––––––––––––––––––––––––––––––––––––––––––– -->
+<head>
+  <meta charset='utf-8'>
+
+  <title></title>
+
+  <!-- SEO -->
+  <meta content="" name="author" />
+  <meta content="" name="description" />
+  <meta content="" name="keywords" />
+
+  <meta name="robots" content="index, follow"/>
+
+  <!-- Mobile Specific Metas ( Responsive )
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <meta name="viewport" content="width=device-width,height=device-height,initial-scale=1,maximum-scale=1,user-scalable=no" id="viewport">
+
+  <meta http-equiv="cleartype" content="on">
+  <meta name=format-detection content="telephone=no">
+
+  <!-- android -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <!-- iOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="translucent-white">
+  <meta name="apple-mobile-web-app-title" content="">
+
+  <!-- Social Sharing Meta Tags
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+
+  <!-- OpenGraph
+       https://ogp.me/
+  -->
+  <meta property=og:locale content="en_EN" />
+  <meta property=og:title content="">
+  <meta property=og:description content="">
+  <meta property=og:image content="">
+  <meta property=og:site_name content="">
+  <meta property=og:url content="">
+  <meta property=og:type content=website>
+
+  <!-- Twitter Cards
+       https://developer.twitter.com/en/docs/twitter-for-websites/cards/overview/summary-card-with-large-image
+  -->
+  <meta name=twitter:card content=summary_large_image>
+  <meta name=twitter:site content="">
+  <meta name=twitter:creator content="">
+  <meta name=twitter:title content="">
+  <meta name=twitter:description content="">
+  <meta name=twitter:image content="">
+
+  <!-- Favicon
+       https://www.favicon-generator.org/
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+
+
+  <!-- CSS (Cascading Style Sheets)
+       https://en.wikipedia.org/wiki/CSS
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link rel="stylesheet" type="text/css" href="../../css/reset.css">
+  <link rel="stylesheet" type="text/css" href="../../css/normalize.css">
+  <link rel="stylesheet" type="text/css" href="../../css/skeleton.css">
+
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.6.1/mapbox-gl.css" rel="stylesheet" />
+
+  <style>
+
+    #d3_mapbox{
+      position:absolute;
+      top:0;
+      bottom:0;
+      width:100%;
+    }
+    svg{
+      position: absolute;
+      width: 100%;
+      height: 100%;
+    }
+
+  </style>
+
+
+</head>
+
+<!-- BODY ( DOM [Document Object Model] created when page is loaded )
+     https://en.wikipedia.org/wiki/Document_Object_Model
+–––––––––––––––––––––––––––––––––––––––––––––––––– -->
+<body>
+
+  <div id="d3_mapbox"></div>
+  <div id="imageContainer">
+    <canvas id="imageCanvas" style="touch-action: none; cursor: not-allowed; pointer-events: none"></canvas>
+  </div>
+
+
+</body>
+
+
+<!-- JS (Javascript, client side scripts)
+–––––––––––––––––––––––––––––––––––––––––––––––––– -->
+<script src="https://api.mapbox.com/mapbox-gl-js/v2.6.1/mapbox-gl.js"></script> <!-- https://www.mapbox.com/mapbox-gljs -->
+<script src="../../js/d3.v4.min.js"></script>                                   <!-- https://d3js.org/ -->
+<script src="../../js/jquery-3.6.0.min.js"></script>                            <!-- https://jquery.com/ -->
+
+<script>
+
+  ////////////////////////////////////////////////// INIT VARS
+
+  // Mapbox
+  var mapbox_AccessToken = "pk.eyJ1IjoibjNtM2RhIiwiYSI6ImNpbzQ3c2piNjAwMW91bWtucWVmbDgyM2MifQ.hJ128YxlaupC-41rpti0vQ";
+  var numImages;
+  var imageData;
+  var imagesX;
+  var imagesY;
+  var imagesW;
+  var imagesH;
+  var currentImagesLoaded = 0;
+
+  // Data
+  var jsonDataURL = "../../data/random.geojson";
+  var localData;
+  var randomImagesURL = "https://api.unsplash.com/photos/random?client_id=Lgy2NWRkNRKIaRBcIom_2XeoQTXtVBMIZYuXRDzcGhw&count=20";
+
+  // D3
+  var svgContainerID = "d3_SVGLayer";
+
+  // Image Canvas
+  var imageCanvas = document.getElementById('imageCanvas');
+  var imageContainer = imageCanvas.parentNode;
+  var imageContext = imageCanvas.getContext('2d');
+  var thumbScale = 3.5;
+
+
+  ////////////////////////////////////////////////// SETUP
+
+  // Set-up Mapbox ( automatically create zoomable map )
+  mapboxgl.accessToken = mapbox_AccessToken;
+  const map = new mapboxgl.Map({
+    container: 'd3_mapbox',
+    style: 'mapbox://styles/mapbox/streets-v11',
+    projection: 'mercator', // albers, equalEarth, equirectangular, lambertConformalConic, mercator, naturalEarth, winkelTripel
+    zoom: 1.8,
+    center: [10, 20], // starting position [lng, lat]
+    antialias: true
+  });
+
+  // Mapbox+D3 Connection
+  // Get Mapbox map canvas container
+  var mapboxCanvas = map.getCanvasContainer();
+
+  resetImageCanvas();
+
+  map.on('load', function () {
+    d3.json(jsonDataURL, function(err, data) {
+      if (err) throw err;
+
+      localData = data;
+
+      console.log(localData.features);
+
+      // Call the update function
+      updateMap();
+      // Update on map interaction
+      map.on("viewreset", updateMap);
+      map.on("move",      updateMap);
+      map.on("moveend",   updateMap);
+
+    });
+
+    d3.json(randomImagesURL, function(err, data) {
+      if (err) throw err;
+
+      numImages = data.length;
+      //console.log(data);
+
+      imageData = new Array(numImages);
+      imagesX = new Array(numImages);
+      imagesY = new Array(numImages);
+      imagesW = new Array(numImages);
+      imagesH = new Array(numImages);
+
+      var counter = 0;
+      for(var i=0;i<numImages;i++){
+        loadImageFromWeb(counter,data[i]['urls']['regular']);
+        //console.log(data[i]['urls']['regular']);
+        counter++;
+      }
+
+    });
+  });
+
+
+  ////////////////////////////////////////////////// UPDATE
+  function updateMap(){
+    clearImageCanvas();
+    if(currentImagesLoaded == 20){
+      for(var i=0;i<currentImagesLoaded;i++){
+        imagesX[i] = project(localData.features[i].geometry.coordinates).x;
+        imagesY[i] = project(localData.features[i].geometry.coordinates).y;
+        visualizeImages(i);
+      }
+    }
+  }
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////// FUNCTIONS
+  function resetImageCanvas(){
+    imageCanvas.style.position="absolute";
+    imageCanvas.style.left="0px";
+    imageCanvas.style.top="0px";
+    imageCanvas.style.width = window.innerWidth+"px";
+    imageCanvas.style.height = window.innerHeight+"px";
+    imageCanvas.width = window.innerWidth;
+    imageCanvas.height = window.innerHeight;
+    imageCanvas.style.overflow = 'hidden';
+    imageCanvas.style.position = 'absolute';
+
+    imageContext.strokeStyle = '#ffffff';
+    imageContext.fillStyle = '#ffffff';
+    imageContext.font = "32px Arial";
+  }
+
+  function clearImageCanvas(){
+    imageContext.clearRect(0,0,window.innerWidth,window.innerHeight);
+  }
+
+  function visualizeImages(index){
+    imageContext.globalAlpha = 0.9;
+    imageContext.drawImage(imageData[index],imagesX[index],imagesY[index],imagesW[index],imagesH[index]);
+    imageContext.globalAlpha = 1;
+  }
+
+  async function loadImageFromWeb(i,url){
+
+    const imageLoadPromise = new Promise(resolve => {
+          imageData[i] = new Image();
+          imageData[i].onload = resolve;
+
+          imageData[i].src = url;
+          //imageData[i].crossOrigin = 'Anonymous';
+    });
+
+    await imageLoadPromise; // WAIT and AVOID image loading collapse
+
+    console.log(i+" - "+imageData[i].src);
+
+    currentImagesLoaded++;
+
+    imagesW[i] = imageData[i].width/thumbScale;
+    imagesH[i] = imageData[i].height/thumbScale;
+
+    updateMap();
+
+  }
+
+  // Project GeoJSON coordinate to the map's current state
+  function project(d) {
+    return map.project(new mapboxgl.LngLat(+d[0], +d[1])); // [Long, Lat] [-180-180, -90,90]
+  }
+  ////////////////////////////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////// EVENTS
+  window.addEventListener('resize', e => {
+    resetImageCanvas();
+    clearImageCanvas();
+    updateMap();
+  }, true);
+  ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+</script>
+
+</html>

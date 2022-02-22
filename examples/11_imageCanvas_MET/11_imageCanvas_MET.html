@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<!-- HEAD
+–––––––––––––––––––––––––––––––––––––––––––––––––– -->
+<head>
+  <meta charset='utf-8'>
+
+  <title></title>
+
+  <!-- SEO -->
+  <meta content="" name="author" />
+  <meta content="" name="description" />
+  <meta content="" name="keywords" />
+
+  <meta name="robots" content="index, follow"/>
+
+  <!-- Mobile Specific Metas ( Responsive )
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <meta name="viewport" content="width=device-width,height=device-height,initial-scale=1,maximum-scale=1,user-scalable=no" id="viewport">
+
+  <meta http-equiv="cleartype" content="on">
+  <meta name=format-detection content="telephone=no">
+
+  <!-- android -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <!-- iOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="translucent-white">
+  <meta name="apple-mobile-web-app-title" content="">
+
+  <!-- Social Sharing Meta Tags
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+
+  <!-- OpenGraph
+       https://ogp.me/
+  -->
+  <meta property=og:locale content="en_EN" />
+  <meta property=og:title content="">
+  <meta property=og:description content="">
+  <meta property=og:image content="">
+  <meta property=og:site_name content="">
+  <meta property=og:url content="">
+  <meta property=og:type content=website>
+
+  <!-- Twitter Cards
+       https://developer.twitter.com/en/docs/twitter-for-websites/cards/overview/summary-card-with-large-image
+  -->
+  <meta name=twitter:card content=summary_large_image>
+  <meta name=twitter:site content="">
+  <meta name=twitter:creator content="">
+  <meta name=twitter:title content="">
+  <meta name=twitter:description content="">
+  <meta name=twitter:image content="">
+
+  <!-- Favicon
+       https://www.favicon-generator.org/
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+
+
+  <!-- CSS (Cascading Style Sheets)
+       https://en.wikipedia.org/wiki/CSS
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link rel="stylesheet" type="text/css" href="../../css/reset.css">
+  <link rel="stylesheet" type="text/css" href="../../css/normalize.css">
+  <link rel="stylesheet" type="text/css" href="../../css/skeleton.css">
+
+  <style>
+
+    svg{
+      position: absolute;
+      width: 100%;
+      height: 100%;
+    }
+
+  </style>
+
+
+</head>
+
+<!-- BODY ( DOM [Document Object Model] created when page is loaded )
+     https://en.wikipedia.org/wiki/Document_Object_Model
+–––––––––––––––––––––––––––––––––––––––––––––––––– -->
+<body>
+
+  <div id="imageContainer">
+    <canvas id="imageCanvas" style="touch-action: none"></canvas>
+  </div>
+
+
+</body>
+
+
+<!-- JS (Javascript, client side scripts)
+–––––––––––––––––––––––––––––––––––––––––––––––––– -->
+<script src="../../js/d3.v4.min.js"></script>                                                   <!-- https://d3js.org/ -->
+<script src="../../js/jquery-3.6.0.min.js"></script>                                            <!-- https://jquery.com/ -->
+
+<script>
+
+  ////////////////////////////////////////////////// INIT VARS
+
+  // Data
+  var jsonDataIDS = "https://collectionapi.metmuseum.org/public/collection/v1/search?hasImages=true&departmentId=19&q=society";
+  var numImages;
+  var imageData;
+  var imageLoaded;
+  var allImagesLoaded = false;
+  var startRendering = false;
+  var currentImagesLoaded = 0;
+  var actualImageLoaded = 0;
+  var actualLoadedFile;
+  var imagesTitle;
+  var imagesX;
+  var imagesY;
+  var imagesW;
+  var imagesH;
+  var mouseDistances;
+  var gridRandPosX;
+  var gridRandPosY;
+  var shufflePosIndex;
+  var actualImageOver = 0;
+  var lastImageOver = 0;
+
+  // D3
+  var svgContainerID = "d3_SVGLayer";
+
+  // Image Canvas
+  var imageCanvas = document.getElementById('imageCanvas');
+  var imageContainer = imageCanvas.parentNode;
+  var imageContext = imageCanvas.getContext('2d');
+  var canvasWDim = 0;
+  var canvasHDim = 0;
+  var canvasXGridNum = 14;
+  var canvasYGridNum = 14;
+  var canvasXProportion = 6/3;
+  var canvasYProportion = 11/3;
+  var canvasDeltaMouseX = 2.8/3;
+  var canvasDeltaMouseY = 7.8/3;
+  var canvasPosX = 0;
+  var canvasPosY = 0;
+  var canvasPosXSmooth = 0;
+  var canvasPosYSmooth = 0;
+  var mousePos = { x:window.innerWidth/2, y:window.innerHeight/2 };
+  var mx = 0;
+  var my = 0;
+  var thumbScale = 1.5;
+  var minZoom = 0.8;
+  var maxZoom = 1.8;
+  var zoomAreaDelta = 400;
+  var fontSize = 32;
+
+  ////////////////////////////////////////////////// SETUP
+
+  $(document).ready(function() {
+    resetCanvas();
+  });
+
+  // Overlay d3 on the image canvas
+  var svg = d3.select("#imageCanvas").append("svg:svg").attr("id",svgContainerID);
+
+
+  d3.json(jsonDataIDS, function(data) {
+
+    //console.log(localData['objectIDs'].length);
+    numImages = data['objectIDs'].length;
+
+    imageData = new Array(numImages);
+    imageLoaded = new Array(numImages);
+    imagesTitle = new Array(numImages);
+    imagesX = new Array(numImages);
+    imagesY = new Array(numImages);
+    imagesW = new Array(numImages);
+    imagesH = new Array(numImages);
+    mouseDistances = new Array(numImages);
+
+    gridRandPosX = new Array(numImages);
+    gridRandPosY = new Array(numImages);
+    shufflePosIndex = new Array(numImages);
+
+    var counter = 0;
+    for(var i=0;i<data['objectIDs'].length;i++){
+      //console.log(localData['objectIDs'][i]);
+      d3.json("https://collectionapi.metmuseum.org/public/collection/v1/objects/"+data['objectIDs'][i], function(objdata) {
+        //console.log(objdata['primaryImageSmall']);
+        loadImageFromWeb(counter,objdata);
+        counter++;
+      });
+    }
+
+
+  });
+
+
+  ////////////////////////////////////////////////// UPDATE
+  function updateCanvas(){
+    canvasWDim = (window.innerWidth*canvasXProportion);
+    canvasHDim = (window.innerHeight*canvasYProportion);
+
+    canvasPosX = (mousePos.x/window.innerWidth) * (-window.innerWidth*canvasDeltaMouseX);
+    canvasPosY = (mousePos.y/window.innerHeight) * (-window.innerHeight*canvasDeltaMouseY);
+
+    canvasPosXSmooth = canvasPosXSmooth*0.75 + canvasPosX*0.25;
+    canvasPosYSmooth = canvasPosYSmooth*0.75 + canvasPosY*0.25;
+
+    imageCanvas.style.left=canvasPosXSmooth+"px";
+    imageCanvas.style.top=canvasPosYSmooth+"px";
+
+    if(typeof imageLoaded !== 'undefined'){
+      if(imageLoaded[actualImageLoaded]){
+        if(actualImageLoaded < numImages-1){
+          actualImageLoaded++;
+        }
+      }
+    }
+
+    // check data
+    allImagesLoaded = true;
+    for(var i=0;i<currentImagesLoaded;i++){
+      if(!imageData[i].complete){
+        allImagesLoaded = false;
+      }
+    }
+    // redraw data
+    if(startRendering && allImagesLoaded){
+      reloadData();
+      //drawGrid();
+    }else{
+      // loading animation
+      drawAnimatedText();
+    }
+  }
+
+  setInterval(updateCanvas,20);
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////// FUNCTIONS
+  function clearCanvas(){
+    canvasWDim = (window.innerWidth*canvasXProportion);
+    canvasHDim = (window.innerHeight*canvasYProportion);
+
+    imageCanvas.style.width = canvasWDim+"px";
+    imageCanvas.style.height = canvasHDim+"px";
+    imageCanvas.width = canvasWDim;
+    imageCanvas.height = canvasHDim;
+
+    imageContext.fillStyle = '#ffffff';
+    imageContext.strokeStyle = '#ffffff';
+    imageContext.font = fontSize+"px Arial";
+  }
+
+  function resetCanvas(){
+    imageCanvas.style.position="absolute";
+    imageCanvas.style.left="0px";
+    imageCanvas.style.top="0px";
+    imageCanvas.style.width = (window.innerWidth*canvasXProportion)+"px";
+    imageCanvas.style.height = (window.innerHeight*canvasYProportion)+"px";
+    imageCanvas.width=(window.innerWidth*canvasXProportion);
+    imageCanvas.height=(window.innerHeight*canvasYProportion);
+    imageCanvas.style.overflow = 'hidden';
+    imageCanvas.style.position = 'absolute';
+
+    canvasWDim = (window.innerWidth*canvasXProportion);
+    canvasHDim = (window.innerHeight*canvasYProportion);
+
+    imageContext.strokeStyle = '#ffffff';
+    imageContext.fillStyle = '#ffffff';
+    imageContext.font = fontSize+"px Arial";
+  }
+
+  // Get the position of the mouse relative to the canvas
+  function getMousePos(canvasDom, mouseEvent) {
+    var rect = canvasDom.getBoundingClientRect();
+    return {
+      x: mouseEvent.clientX - rect.left,
+      y: mouseEvent.clientY - rect.top
+    };
+  }
+
+  function shuffleArray(array) {
+    let curId = array.length;
+    // There remain elements to shuffle
+    while (0 !== curId) {
+      // Pick a remaining element
+      let randId = Math.floor(Math.random() * curId);
+      curId -= 1;
+      // Swap it with the current element.
+      let tmp = array[curId];
+      array[curId] = array[randId];
+      array[randId] = tmp;
+    }
+    return array;
+  }
+
+  function randomizePositions(){
+    var xDelta = canvasWDim/canvasXGridNum;
+    var yDelta = canvasHDim/canvasYGridNum;
+
+    var i = 0;
+    for(var yy=(canvasHDim/canvasYGridNum)/6 + yDelta/4;yy<canvasHDim - (yDelta*2);yy += yDelta){
+      for(var xx=xDelta/4;xx<canvasWDim - xDelta;xx += xDelta){
+        gridRandPosX[i] = xx+(xDelta/2) + Math.floor(Math.random() * -20);
+        gridRandPosY[i] = yy+(yDelta/2) + Math.floor(Math.random() * -20);
+        shufflePosIndex[i] = i;
+        i++;
+      }
+    }
+
+    shufflePosIndex = shuffleArray(shufflePosIndex);
+
+    for(var i=0;i<numImages;i++){
+      imagesX[i] = gridRandPosX[shufflePosIndex[i]];
+      imagesY[i] = gridRandPosY[shufflePosIndex[i]];
+    }
+  }
+
+  function loadData(index){
+    imagesW[index] = imageData[index].width/thumbScale;
+    imagesH[index] = imageData[index].height/thumbScale;
+
+    if(mx > imagesX[index]-(imagesW[index]/2) && mx < imagesX[index]+(imagesW[index]/2) && my > imagesY[index]-(imagesH[index]/2) && my < imagesY[index]+(imagesH[index]/2)){
+        imageContext.fillRect(imagesX[index]-(imagesW[index]/2),imagesY[index]-(imagesH[index]/2),imagesW[index]+2,imagesH[index]+2);
+    }else{
+        imageContext.fillRect(imagesX[index]-(imagesW[index]*2),imagesY[index]-(imagesH[index]*2),(imagesW[index]*4) + 2,(imagesH[index]*4) +2);
+    }
+  }
+
+  function reloadData(){
+    for(var i=0;i<currentImagesLoaded;i++){
+      loadData(i);
+      var actualDistance = calculateDistance(mx,my,imagesX[i],imagesY[i]);
+      if(actualDistance < zoomAreaDelta){
+        mouseDistances[i] = (maxZoom - actualDistance/zoomAreaDelta);
+      }else{
+        mouseDistances[i] = minZoom;
+      }
+    }
+
+    // check for focused project
+    actualImageOver = -1;
+
+    for(var i=0;i<currentImagesLoaded;i++){
+      if(mx > imagesX[i]-(imagesW[i]*mouseDistances[i]/2) && mx < imagesX[i]+(imagesW[i]*mouseDistances[i]/2) && my > imagesY[i]-(imagesH[i]*mouseDistances[i]/2) && my < imagesY[i]+(imagesH[i]*mouseDistances[i]/2)){
+        actualImageOver = i;
+
+        if(lastImageOver != actualImageOver){
+          lastImageOver = i;
+        }
+        break;
+      }
+    }
+
+    for(var i=0;i<currentImagesLoaded;i++){
+      if(i!=actualImageOver){
+        visualizeImages(i);
+      }
+    }
+
+    if(actualImageOver != -1){
+      visualizeImages(actualImageOver);
+      imageContext.fillStyle = '#ffffff99';
+      imageContext.fillRect(mx - imageContext.measureText(imagesTitle[actualImageOver]).width/2,my + 22,imageContext.measureText(imagesTitle[actualImageOver]).width,fontSize);
+      imageContext.fillStyle = '#000000';
+      imageContext.fillText(imagesTitle[actualImageOver], mx - imageContext.measureText(imagesTitle[actualImageOver]).width/2,my + 50);
+      imageContext.fillStyle = '#ffffff';
+    }
+  }
+
+  function visualizeImages(index){
+    if(imageData[index].complete && imageLoaded[index]){
+      imageContext.drawImage(imageData[index],imagesX[index]-(imagesW[index]*mouseDistances[index]/2),imagesY[index]-(imagesH[index]*mouseDistances[index]/2),imagesW[index]*mouseDistances[index],imagesH[index]*mouseDistances[index]);
+    }
+  }
+
+  function calculateDistance(x1, y1, x2, y2) {
+      var a = x2 - x1;
+      var b = y2 - y1;
+
+      return Math.sqrt(a * a + b * b );
+  }
+
+  function drawAnimatedText(){
+    imageContext.clearRect(0, 0, imageCanvas.width, imageCanvas.height);
+
+    var fullText = "Loading "+actualLoadedFile;
+    var numImagesLoaded = (actualImageLoaded+1)+"/"+numImages;
+
+    if(Math.random() < 0.6){
+      imageContext.fillStyle = '#000000';
+    }else{
+      imageContext.fillStyle = '#ffffff';
+    }
+    imageContext.fillText(numImagesLoaded, imageCanvas.width/2 - imageContext.measureText(numImagesLoaded).width/2,imageCanvas.height/2 + 6);
+
+    if(Math.random() < 0.6){
+      imageContext.fillStyle = '#000000';
+    }else{
+      imageContext.fillStyle = '#ffffff';
+    }
+    imageContext.fillText(fullText, imageCanvas.width/2 - imageContext.measureText(fullText).width/2,imageCanvas.height/2 + 90);
+
+    imageContext.fillStyle = '#ffffff';
+  }
+
+  function drawGrid(){
+
+    imageContext.strokeStyle = '#000000';
+
+    var xDelta = canvasWDim/canvasXGridNum;
+    var yDelta = canvasHDim/canvasYGridNum;
+
+    for(var x=0;x<canvasWDim;x += xDelta){
+      imageContext.beginPath();
+      imageContext.moveTo(x, 0);
+      imageContext.lineTo(x, canvasHDim);
+      imageContext.stroke();
+    }
+    for(var y=(canvasHDim/canvasYGridNum)/6;y<canvasHDim;y += yDelta){
+      imageContext.beginPath();
+      imageContext.moveTo(0, y);
+      imageContext.lineTo(canvasWDim, y);
+      imageContext.stroke();
+    }
+
+    for(var y=(canvasHDim/canvasYGridNum)/6 + yDelta;y<canvasHDim - (yDelta*2);y += yDelta){
+      for(var x=xDelta;x<canvasWDim - xDelta;x += xDelta){
+        imageContext.strokeRect(x+(xDelta/2)-5,y+(yDelta/2)-5,10,10);
+      }
+    }
+
+    imageContext.strokeStyle = '#ffffff';
+
+  }
+
+  async function loadImageFromWeb(i,data){
+
+    const imageLoadPromise = new Promise(resolve => {
+          imageLoaded[i] = false;
+          imageData[i] = new Image();
+          imageData[i].onload = resolve;
+
+          imageData[i].src = data['primaryImageSmall'];
+          //imageData[i].crossOrigin = 'Anonymous';
+    });
+
+    await imageLoadPromise; // WAIT and AVOID image loading collapse
+
+    console.log(i+" - "+imageData[i].src);
+
+    currentImagesLoaded++;
+    loadData(i);
+    imageLoaded[i] = true;
+
+    imagesTitle[i] = data['title'];
+    actualLoadedFile = data['title'];
+
+    if(i == numImages-1){
+      setTimeout(function(){
+        resetCanvas();
+        randomizePositions();
+        clearCanvas();
+        startRendering = true;
+        console.log("START RENDERING");
+      }, 1000);
+    }
+
+  }
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////// EVENTS
+
+  // movements
+  imageContainer.addEventListener('mousemove', e => {
+    if(startRendering && allImagesLoaded){
+      mousePos = getMousePos(imageContainer,e);
+    }
+  });
+
+  // mouse position on screen
+  imageCanvas.addEventListener('mousemove', e => {
+    if(startRendering && allImagesLoaded){
+      mx = e.offsetX;
+      my = e.offsetY;
+    }
+  });
+
+  window.addEventListener('resize', e => {
+    resetCanvas();
+    randomizePositions();
+    clearCanvas();
+  }, true);
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+</script>
+
+</html>
